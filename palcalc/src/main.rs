@@ -1,16 +1,32 @@
 use std::{
     io::{stdout, Write},
+    path::PathBuf,
     thread,
     time::Duration,
 };
 
+use clap::Parser;
 use crossterm::{
     cursor, execute, queue,
     style::{self, Color},
     terminal::{self, ClearType},
 };
 
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(required = true)]
+    files: Vec<PathBuf>,
+    #[arg(short = 't', long = "tex", num_args(0..))]
+    tex_files: Vec<PathBuf>,
+    #[arg(short='f', long = "fixed", num_args(0..))]
+    fixed_files: Vec<PathBuf>,
+    #[arg(short, long)]
+    shades: u32,
+}
+
 fn main() {
+    let args = Args::parse_from(wild::args());
+    /*
     let mut stdout = stdout();
     let width = terminal::size().unwrap().0;
     let offset = (width - 63) / 2;
@@ -49,4 +65,5 @@ fn main() {
 
     execute!(stdout, cursor::Show, terminal::LeaveAlternateScreen).unwrap();
     terminal::disable_raw_mode().unwrap();
+    */
 }
