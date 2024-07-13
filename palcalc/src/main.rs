@@ -4,27 +4,28 @@ use crossterm::{
     cursor::{MoveTo, MoveToNextLine},
     execute, queue,
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
-    terminal::{Clear, ClearType},
+    terminal::{self, Clear, ClearType},
 };
 
 fn main() {
     let mut stdout = stdout();
+    let offset = (terminal::size().unwrap().0 - 63) / 2;
     execute!(
         stdout,
         Clear(ClearType::All),
         SetForegroundColor(Color::White),
         SetBackgroundColor(Color::Red),
-        MoveTo(0, 1),
+        MoveTo(offset, 1),
         Print(r"  __   ___ ___  __   __      __        __   __  ___  ___  __   "),
-        MoveToNextLine(1),
+        MoveTo(offset, 2),
         Print(r" |__) |__   |  |__) /  \    /__` |__| /  \ /  \  |  |__  |__)  "),
-        MoveToNextLine(1),
+        MoveTo(offset, 3),
         Print(r" |  \ |___  |  |  \ \__/    .__/ |  | \__/ \__/  |  |___ |  \  "),
-        MoveToNextLine(1),
+        MoveTo(offset, 4),
         Print(r"                                                               "),
-        MoveToNextLine(1),
+        MoveTo(offset, 5),
         SetBackgroundColor(Color::DarkBlue),
-        Print(r"                      PALETTE CALCULATOR                       "),
+        Print(r"              P A L E T T E   C A L C U L A T O R              "),
         ResetColor
     )
     .unwrap();
