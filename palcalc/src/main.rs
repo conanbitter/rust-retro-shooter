@@ -1,5 +1,5 @@
 use std::{
-    io::{stdout, Write},
+    io::{stdout, Stdout, Write},
     path::PathBuf,
     thread,
     time::Duration,
@@ -24,9 +24,30 @@ struct Args {
     shades: u32,
 }
 
+fn pr_print(out: &mut Stdout, width: u16, x: u16, y: u16, step: u32, count: u32) {
+    let percent = format!("{}%", ((step as f64) * 100.0 / (count as f64)).round() as i32);
+    let left_pad = (width as usize - percent.len()) / 2;
+    let right_pad = width as usize - percent.len() - left_pad;
+    let line = format!("{}{}{}", " ".repeat(left_pad), percent, " ".repeat(right_pad));
+    let division = (step as f64 / count as f64 * width as f64).round() as usize;
+    let left_half = &line[..division];
+    let right_half = &line[division..];
+    queue!(
+        *out,
+        style::SetForegroundColor(Color::White),
+        cursor::MoveTo(x, y),
+        style::SetBackgroundColor(Color::DarkGreen),
+        style::Print(left_half),
+        cursor::MoveTo(x + division as u16, y),
+        style::SetBackgroundColor(Color::DarkGrey),
+        style::Print(right_half),
+    )
+    .unwrap();
+}
+
 fn main() {
-    let args = Args::parse_from(wild::args());
-    /*
+    //let args = Args::parse_from(wild::args());
+
     let mut stdout = stdout();
     let width = terminal::size().unwrap().0;
     let offset = (width - 63) / 2;
@@ -61,9 +82,17 @@ fn main() {
 
     stdout.flush().unwrap();
 
-    thread::sleep(Duration::from_secs(2));
+    let pb_width = width - 2;
+    let pb_x = 1;
+    let pb_y = 9;
+
+    for i in 0..267 {
+        pr_print(&mut stdout, pb_width, pb_x, pb_y, i, 268);
+        stdout.flush().unwrap();
+
+        thread::sleep(Duration::from_millis(100));
+    }
 
     execute!(stdout, cursor::Show, terminal::LeaveAlternateScreen).unwrap();
     terminal::disable_raw_mode().unwrap();
-    */
 }
