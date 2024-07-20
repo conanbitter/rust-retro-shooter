@@ -338,3 +338,97 @@ impl StatusImageLoading {
         Ok(())
     }
 }
+
+pub struct StatusCalculating {
+    l_time_elapsed: Label,
+    l_time_remaining: Label,
+    c_attempts: RightCounter,
+    c_steps: RightCounter,
+    l_moved: Label,
+    l_distance: Label,
+    pbar: ProgressBar,
+    pub timer: Timer,
+}
+
+impl StatusCalculating {
+    pub fn new(
+        tui: &mut Tui,
+        total_attempts: u32,
+        total_steps: u32,
+        unique_colors: u64,
+        fixed_colors: u64,
+    ) -> Result<StatusCalculating> {
+        tui.prepare_block("Calculating palette", tui.offset, 12)?;
+        let second_column = tui.width / 2;
+        execute!(
+            tui.out,
+            style::SetBackgroundColor(Color::Grey),
+            style::SetForegroundColor(Color::Black),
+            cursor::MoveTo(2, 2 + tui.offset),
+            style::Print("Elapsed:"),
+            cursor::MoveTo(second_column, 2 + tui.offset),
+            style::Print("Remaining:"),
+            cursor::MoveTo(2, 4 + tui.offset),
+            style::Print("Attempt:"),
+            cursor::MoveTo(second_column, 4 + tui.offset),
+            style::Print("Step:"),
+            cursor::MoveTo(2, 6 + tui.offset),
+            style::Print("Points moved:"),
+            cursor::MoveTo(second_column, 6 + tui.offset),
+            style::Print("Distance:"),
+            cursor::MoveTo(2, 10 + tui.offset),
+            style::Print("Colors"),
+            cursor::MoveTo(2, 11 + tui.offset),
+            style::Print("Adjustable:"),
+            cursor::MoveTo(second_column, 11 + tui.offset),
+            style::Print("Fixed:"),
+            style::SetForegroundColor(Color::Red),
+            cursor::MoveTo(14, 11 + tui.offset),
+            style::Print(unique_colors.to_string()),
+            cursor::MoveTo(second_column + 7, 11 + tui.offset),
+            style::Print(fixed_colors.to_string()),
+        )?;
+        Ok(StatusCalculating {
+            l_time_elapsed: Label::new(11, 2, 13, OverflowCut::Right),
+            l_time_remaining: Label::new(second_column + 11, 2, 13, OverflowCut::Right),
+            c_attempts: RightCounter::new(2 + 9, 4, total_attempts),
+            c_steps: RightCounter::new(second_column + 6, 4, total_steps),
+            l_moved: Label::new(2 + 14, 6, second_column - 2 - 14 - 2, OverflowCut::Left),
+            l_distance: Label::new(second_column + 10, 6, 14, OverflowCut::Right),
+            pbar: ProgressBar::new(2, 8, tui.width - 4, total_attempts * total_steps),
+            timer: Timer::new(total_attempts * total_steps),
+        })
+    }
+
+    pub fn update(
+        &mut self,
+        tui: &mut Tui,
+        attempt: u32,
+        step: u32,
+        moved: u64,
+        distance: f64,
+        progress: u32,
+        adjusted_total: u32,
+    ) -> Result<()> {
+        self.timer.total = adjusted_total;
+        self.timer.update(progress);
+        self.l_time_elapsed.value = self.timer.get_elapsed();
+        self.l_time_remaining.value = self.timer.get_remaining();
+        self.c_attempts.value = attempt;
+        self.c_steps.value = step;
+        self.l_moved.value = moved.to_string();
+        self.l_distance.value = format!("{:8.4}", distance);
+        self.pbar.total = adjusted_total;
+        self.pbar.progress = progress;
+
+        self.l_time_elapsed.draw(tui)?;
+        self.l_time_remaining.draw(tui)?;
+        self.c_attempts.draw(tui)?;
+        self.c_steps.draw(tui)?;
+        self.l_moved.draw(tui)?;
+        self.l_distance.draw(tui)?;
+        self.pbar.draw(tui)?;
+        tui.refresh()?;
+        Ok(())
+    }
+}
