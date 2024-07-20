@@ -50,12 +50,12 @@ fn pr_print(out: &mut Stdout, width: u16, x: u16, y: u16, step: u32, count: u32)
 fn main() {
     //let args = Args::parse_from(wild::args());
 
-    let (mut stdout, width) = interface::prepare_terminal().unwrap();
-    let offset = interface::show_logo(&mut stdout, width).unwrap();
+    let mut tui = interface::Tui::new().unwrap();
+    tui.show_logo().unwrap();
 
-    interface::prepare_block(&mut stdout, "Loading images", offset, 5, width).unwrap();
+    tui.prepare_block("Loading images", 7, 5).unwrap();
 
-    let pb_width = width - 2;
+    /*let pb_width = width - 2;
     let pb_x = 1;
     let pb_y = 9;
 
@@ -64,7 +64,6 @@ fn main() {
         stdout.flush().unwrap();
 
         thread::sleep(Duration::from_millis(100));
-    }
-
-    interface::finish_terminal(&mut stdout).unwrap();
+    }*/
+    thread::sleep(Duration::from_secs(3));
 }
