@@ -4,7 +4,10 @@ use crossterm::{
     style::{self, Color},
     terminal::{self, ClearType},
 };
-use std::io::{stdout, Stdout, Write};
+use std::{
+    fmt::format,
+    io::{stdout, Stdout, Write},
+};
 
 pub struct Tui {
     out: Stdout,
@@ -50,22 +53,29 @@ impl Tui {
     }
 
     pub fn prepare_block(&mut self, caption: &str, y: u16, height: u16) -> Result<()> {
+        let left_pad = (self.width as usize - 2 - caption.len() - 2) / 2;
+        let right_pad = self.width as usize - 2 - caption.len() - 2 - left_pad;
+        let top = format!("╔{} {} {}╗", "═".repeat(left_pad), caption, "═".repeat(right_pad));
         queue!(
             self.out,
             style::ResetColor,
             cursor::MoveTo(0, y),
             terminal::Clear(ClearType::FromCursorDown),
             style::SetBackgroundColor(Color::Grey),
-            style::SetForegroundColor(Color::Black)
+            style::SetForegroundColor(Color::Black),
+            cursor::MoveTo(0, y),
+            style::Print(top)
         )?;
 
+        let middle = format!("║{}║", " ".repeat(self.width as usize - 2));
+
         for i in 0..height {
-            queue!(
-                self.out,
-                cursor::MoveTo(0, i + y),
-                terminal::Clear(ClearType::CurrentLine)
-            )?;
+            queue!(self.out, cursor::MoveTo(0, i + y + 1), style::Print(&middle))?;
         }
+
+        let bottom = format!("╚{}╝", "═".repeat(self.width as usize - 2));
+
+        queue!(self.out, cursor::MoveTo(0, y + height + 1), style::Print(bottom))?;
 
         self.out.flush()?;
         Ok(())
