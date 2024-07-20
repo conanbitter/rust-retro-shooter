@@ -1,16 +1,6 @@
-use std::{
-    io::{stdout, Stdout, Write},
-    path::PathBuf,
-    thread,
-    time::Duration,
-};
+use std::{path::PathBuf, thread, time::Duration};
 
 use clap::Parser;
-use crossterm::{
-    cursor, execute, queue,
-    style::{self, Color},
-    terminal::{self, ClearType},
-};
 
 mod interface;
 
@@ -26,27 +16,6 @@ struct Args {
     shades: u32,
 }
 
-fn pr_print(out: &mut Stdout, width: u16, x: u16, y: u16, step: u32, count: u32) {
-    let percent = format!("{}%", ((step as f64) * 100.0 / (count as f64)).round() as i32);
-    let left_pad = (width as usize - percent.len()) / 2;
-    let right_pad = width as usize - percent.len() - left_pad;
-    let line = format!("{}{}{}", " ".repeat(left_pad), percent, " ".repeat(right_pad));
-    let division = (step as f64 / count as f64 * width as f64).round() as usize;
-    let left_half = &line[..division];
-    let right_half = &line[division..];
-    queue!(
-        *out,
-        style::SetForegroundColor(Color::White),
-        cursor::MoveTo(x, y),
-        style::SetBackgroundColor(Color::DarkGreen),
-        style::Print(left_half),
-        cursor::MoveTo(x + division as u16, y),
-        style::SetBackgroundColor(Color::DarkGrey),
-        style::Print(right_half),
-    )
-    .unwrap();
-}
-
 fn main() {
     //let args = Args::parse_from(wild::args());
 
@@ -55,15 +24,15 @@ fn main() {
 
     tui.prepare_block("Loading images", 7, 5).unwrap();
 
-    /*let pb_width = width - 2;
-    let pb_x = 1;
-    let pb_y = 9;
+    let mut pr = interface::ProgressBar::new(2, 3, tui.width - 4, 267);
+    pr.draw(&mut tui).unwrap();
 
     for i in 0..267 {
-        pr_print(&mut stdout, pb_width, pb_x, pb_y, i, 268);
-        stdout.flush().unwrap();
+        pr.progress = i;
+        pr.draw(&mut tui).unwrap();
+        tui.refresh().unwrap();
 
         thread::sleep(Duration::from_millis(100));
-    }*/
-    thread::sleep(Duration::from_secs(3));
+    }
+    //thread::sleep(Duration::from_secs(3));
 }

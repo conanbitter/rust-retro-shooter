@@ -11,7 +11,7 @@ use std::{
 
 pub struct Tui {
     out: Stdout,
-    width: u16,
+    pub width: u16,
     offset: u16,
 }
 
@@ -80,11 +80,60 @@ impl Tui {
         self.out.flush()?;
         Ok(())
     }
+
+    pub fn refresh(&mut self) -> Result<()> {
+        self.out.flush()?;
+        Ok(())
+    }
 }
 
 impl Drop for Tui {
     fn drop(&mut self) {
         execute!(self.out, cursor::Show, terminal::LeaveAlternateScreen).unwrap();
         terminal::disable_raw_mode().unwrap();
+    }
+}
+
+pub struct ProgressBar {
+    x: u16,
+    y: u16,
+    width: u16,
+    pub total: u32,
+    pub progress: u32,
+}
+
+impl ProgressBar {
+    pub fn new(x: u16, y: u16, width: u16, total: u32) -> ProgressBar {
+        ProgressBar {
+            x,
+            y,
+            width,
+            progress: 0,
+            total,
+        }
+    }
+
+    pub fn draw(&self, tui: &mut Tui) -> Result<()> {
+        let percent = format!(
+            "{}%",
+            ((self.progress as f64) * 100.0 / (self.total as f64)).round() as i32
+        );
+        let left_pad = (self.width as usize - percent.len()) / 2;
+        let right_pad = self.width as usize - percent.len() - left_pad;
+        let line = format!("{}{}{}", " ".repeat(left_pad), percent, " ".repeat(right_pad));
+        let division = (self.progress as f64 / self.total as f64 * self.width as f64).round() as usize;
+        let left_half = &line[..division];
+        let right_half = &line[division..];
+        queue!(
+            tui.out,
+            style::SetForegroundColor(Color::White),
+            cursor::MoveTo(self.x, self.y + tui.offset),
+            style::SetBackgroundColor(Color::DarkGreen),
+            style::Print(left_half),
+            cursor::MoveTo(self.x + division as u16, self.y + tui.offset),
+            style::SetBackgroundColor(Color::DarkGrey),
+            style::Print(right_half),
+        )?;
+        Ok(())
     }
 }
