@@ -1,7 +1,7 @@
 use std::{path::PathBuf, thread, time::Duration};
 
 use clap::Parser;
-use interface::OverflowCut;
+use interface::{OverflowCut, StatusImageLoading};
 
 mod interface;
 
@@ -23,22 +23,16 @@ fn main() {
     let mut tui = interface::Tui::new().unwrap();
     tui.show_logo().unwrap();
 
-    tui.prepare_block("Loading images", 7, 5).unwrap();
+    let mut status_images = StatusImageLoading::new(&mut tui, 267).unwrap();
 
-    let mut pr = interface::ProgressBar::new(2, 4, tui.width - 4, 267);
-    let mut rc = interface::RightCounter::new(2, 2, 267);
-    let mut lbl = interface::Label::new(10, 2, 5, OverflowCut::Right);
-    lbl.value = "123456".into();
+    status_images.timer.start();
+    status_images.update(&mut tui, " ", 0).unwrap();
 
     for i in 0..267 {
-        pr.progress = i;
-        pr.draw(&mut tui).unwrap();
-        rc.value = i;
-        rc.draw(&mut tui).unwrap();
-        lbl.draw(&mut tui).unwrap();
-        tui.refresh().unwrap();
-
-        thread::sleep(Duration::from_millis(100));
+        if status_images.timer.needs_update() {
+            status_images.update(&mut tui, "xdfxtghst", i).unwrap();
+        }
+        thread::sleep(Duration::from_millis(300));
     }
     //thread::sleep(Duration::from_secs(3));
 }

@@ -5,8 +5,8 @@ use crossterm::{
     terminal::{self, ClearType},
 };
 use std::{
-    fmt::format,
     io::{stdout, Stdout, Write},
+    time::{Duration, Instant},
 };
 
 pub struct Tui {
@@ -163,7 +163,7 @@ impl RightCounter {
     }
 
     pub fn draw(&self, tui: &mut Tui) -> Result<()> {
-        let strval = self.value.to_string();
+        let strval = (self.value + 1).to_string();
         let padding = self.width as usize - strval.len();
         queue!(
             tui.out,
@@ -221,6 +221,120 @@ impl Label {
                 }
             }
         }
+        Ok(())
+    }
+}
+
+pub struct Timer {
+    step: u32,
+    total: u32,
+    start: Instant,
+    last_update: Instant,
+}
+
+fn duration_format(duration: Duration) -> String {
+    let hours = duration.as_secs() / 60 / 60;
+    let minutes = (duration.as_secs() / 60) % 60;
+    let seconds = duration.as_secs() % 60;
+    if hours > 0 {
+        format!("{:>2}h {:0>2}m {:0>2}s", hours, minutes, seconds)
+    } else {
+        if minutes > 0 {
+            format!("{:0>2}m {:0>2}s    ", minutes, seconds) //"    {:0>2}m {:0>2}s"
+        } else {
+            format!("{:0>2}s        ", seconds) //"        {:0>2}s"
+        }
+    }
+}
+
+impl Timer {
+    pub fn new(total: u32) -> Timer {
+        Timer {
+            step: 0,
+            total,
+            start: Instant::now(),
+            last_update: Instant::now(),
+        }
+    }
+
+    pub fn start(&mut self) {
+        self.start = Instant::now();
+        self.last_update = Instant::now();
+    }
+
+    pub fn needs_update(&self) -> bool {
+        self.last_update.elapsed() > Duration::from_millis(500)
+    }
+
+    pub fn update(&mut self, step: u32) {
+        self.step = step;
+        self.last_update = Instant::now();
+    }
+
+    pub fn get_elapsed(&self) -> String {
+        duration_format(self.start.elapsed())
+    }
+
+    pub fn get_remaining(&self) -> String {
+        if self.step == 0 {
+            return duration_format(Duration::ZERO);
+        }
+        let t = self.total as f64;
+        let s = self.step as f64;
+        //let total_time = t / s;
+        let rem_time = (t - s) / s;
+        let remaining = self.start.elapsed().mul_f64(rem_time);
+        duration_format(remaining)
+    }
+}
+
+pub struct StatusImageLoading {
+    l_filename: Label,
+    l_time_elapsed: Label,
+    l_time_remaining: Label,
+    c_counter: RightCounter,
+    pbar: ProgressBar,
+    pub timer: Timer,
+}
+
+impl StatusImageLoading {
+    pub fn new(tui: &mut Tui, total_files: u32) -> Result<StatusImageLoading> {
+        tui.prepare_block("Loading images", tui.offset, 6)?;
+        let mut counter = RightCounter::new(0, 4, total_files);
+        counter.x = tui.width - counter.get_width() - 2;
+        execute!(
+            tui.out,
+            style::SetBackgroundColor(Color::Grey),
+            style::SetForegroundColor(Color::Black),
+            cursor::MoveTo(2, 2 + tui.offset),
+            style::Print("Elapsed:"),
+            cursor::MoveTo(tui.width / 2, 2 + tui.offset),
+            style::Print("Remaining:")
+        )?;
+        Ok(StatusImageLoading {
+            l_filename: Label::new(2, 4, tui.width - 4 - 2 - counter.get_width(), OverflowCut::Right),
+            l_time_elapsed: Label::new(11, 2, 13, OverflowCut::Right),
+            l_time_remaining: Label::new(tui.width / 2 + 11, 2, 13, OverflowCut::Right),
+            c_counter: counter,
+            pbar: ProgressBar::new(2, 5, tui.width - 4, total_files),
+            timer: Timer::new(total_files),
+        })
+    }
+
+    pub fn update(&mut self, tui: &mut Tui, filename: &str, progress: u32) -> Result<()> {
+        self.l_filename.value = filename.into();
+        self.c_counter.value = progress;
+        self.pbar.progress = progress;
+        self.timer.update(progress);
+        self.l_time_elapsed.value = self.timer.get_elapsed();
+        self.l_time_remaining.value = self.timer.get_remaining();
+
+        self.l_filename.draw(tui)?;
+        self.l_time_elapsed.draw(tui)?;
+        self.l_time_remaining.draw(tui)?;
+        self.c_counter.draw(tui)?;
+        self.pbar.draw(tui)?;
+        tui.refresh()?;
         Ok(())
     }
 }
