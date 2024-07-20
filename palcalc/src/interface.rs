@@ -137,3 +137,90 @@ impl ProgressBar {
         Ok(())
     }
 }
+
+pub struct RightCounter {
+    width: u16,
+    x: u16,
+    y: u16,
+    pub value: u32,
+    maxval: u32,
+}
+
+impl RightCounter {
+    pub fn new(x: u16, y: u16, maxval: u32) -> RightCounter {
+        let max_width = maxval.to_string().len();
+        RightCounter {
+            width: max_width as u16,
+            x,
+            y,
+            value: 0,
+            maxval,
+        }
+    }
+
+    pub fn get_width(&self) -> u16 {
+        self.width * 2 + 1
+    }
+
+    pub fn draw(&self, tui: &mut Tui) -> Result<()> {
+        let strval = self.value.to_string();
+        let padding = self.width as usize - strval.len();
+        queue!(
+            tui.out,
+            cursor::MoveTo(self.x, self.y + tui.offset),
+            style::SetForegroundColor(Color::Red),
+            style::SetBackgroundColor(Color::Grey),
+            style::Print(format!("{}{}/{}", " ".repeat(padding), strval, self.maxval))
+        )?;
+        Ok(())
+    }
+}
+
+pub enum OverflowCut {
+    Left,
+    Right,
+}
+
+pub struct Label {
+    width: u16,
+    x: u16,
+    y: u16,
+    pub value: String,
+    cut: OverflowCut,
+}
+
+impl Label {
+    pub fn new(x: u16, y: u16, width: u16, cut: OverflowCut) -> Label {
+        Label {
+            width,
+            x,
+            y,
+            value: "".to_string(),
+            cut,
+        }
+    }
+
+    pub fn draw(&self, tui: &mut Tui) -> Result<()> {
+        queue!(
+            tui.out,
+            cursor::MoveTo(self.x, self.y + tui.offset),
+            style::SetForegroundColor(Color::Red),
+            style::SetBackgroundColor(Color::Grey)
+        )?;
+        if self.value.len() < self.width as usize {
+            queue!(tui.out, style::Print(&self.value))?;
+        } else {
+            match self.cut {
+                OverflowCut::Left => {
+                    let start = self.value.len() - self.width as usize + 3;
+                    queue!(tui.out, style::Print(format!("...{}", &self.value[start..])))?
+                }
+                OverflowCut::Right => {
+                    let end = self.width as usize - 3;
+                    queue!(tui.out, style::Print(format!("{}...", &self.value[..end])))?
+                }
+            }
+        }
+        Ok(())
+    }
+}
