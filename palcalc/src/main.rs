@@ -1,8 +1,12 @@
 use std::{path::PathBuf, thread, time::Duration};
 
 use clap::Parser;
+use colorcalc::ColorData;
 use interface::{OverflowCut, StatusCalculating, StatusImageLoading};
+use rayon::vec;
 
+mod colorcalc;
+mod colors;
 mod interface;
 
 #[derive(Parser, Debug)]
@@ -18,25 +22,50 @@ struct Args {
 }
 
 fn main() {
-    //let args = Args::parse_from(wild::args());
+    let args = Args::parse_from(wild::args());
 
     let mut tui = interface::Tui::new().unwrap();
     tui.show_logo().unwrap();
 
-    let mut status_palette = StatusCalculating::new(&mut tui, 5, 500, 412343, 25).unwrap();
+    let fixed_images = args.fixed_files;
+    let adjustable_images = {
+        let mut vector = args.files;
+        let mut add_vector = args.tex_files;
+        vector.append(&mut add_vector);
+        vector
+    };
 
-    status_palette.timer.start();
-    status_palette.update(&mut tui, 0, 0, 0, 0.0, 0, 2500).unwrap();
+    let total_files = (fixed_images.len() + adjustable_images.len()) as u32;
 
-    for a in 0..5 {
-        for s in 0..500 {
-            if status_palette.timer.needs_update() {
-                status_palette
-                    .update(&mut tui, a, s, 3425457, 45.05676, a * 500 + s, 2500)
-                    .unwrap();
-            }
-            thread::sleep(Duration::from_millis(100));
+    let mut adjustable_colors = ColorData::new();
+    let mut fixed_colors = ColorData::new();
+
+    let mut status_loading = StatusImageLoading::new(&mut tui, total_files).unwrap();
+
+    status_loading.timer.start();
+    status_loading.update(&mut tui, "", 0).unwrap();
+    let mut progress = 0;
+
+    for filename in adjustable_images.iter() {
+        adjustable_colors.add(&filename).unwrap();
+        progress += 1;
+        if status_loading.timer.needs_update() {
+            status_loading
+                .update(&mut tui, filename.to_str().unwrap(), progress)
+                .unwrap();
         }
+        //thread::sleep(Duration::from_millis(300));
     }
+    for filename in fixed_images.iter() {
+        fixed_colors.add(&filename).unwrap();
+        progress += 1;
+        if status_loading.timer.needs_update() {
+            status_loading
+                .update(&mut tui, filename.to_str().unwrap(), progress)
+                .unwrap();
+        }
+        //thread::sleep(Duration::from_millis(300));
+    }
+
     //thread::sleep(Duration::from_secs(3));
 }
