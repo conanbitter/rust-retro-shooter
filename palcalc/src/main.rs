@@ -1,9 +1,8 @@
-use std::{path::PathBuf, thread, time::Duration};
+use std::path::PathBuf;
 
 use clap::Parser;
-use colorcalc::ColorData;
-use interface::{OverflowCut, StatusCalculating, StatusImageLoading};
-use rayon::vec;
+use colorcalc::{ColorCalc, ColorData};
+use interface::StatusImageLoading;
 
 mod colorcalc;
 mod colors;
@@ -66,6 +65,12 @@ fn main() {
         }
         //thread::sleep(Duration::from_millis(300));
     }
+
+    let mut calculator = ColorCalc::new(255, adjustable_colors, fixed_colors);
+    let mut status_calc =
+        interface::StatusCalculating::new(&mut tui, 5, 1000, calculator.unique_colors, calculator.fixed_colors)
+            .unwrap();
+    calculator.run(&mut status_calc, &mut tui).unwrap();
 
     //thread::sleep(Duration::from_secs(3));
 }

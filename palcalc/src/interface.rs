@@ -208,7 +208,8 @@ impl Label {
             style::SetBackgroundColor(Color::Grey)
         )?;
         if self.value.len() < self.width as usize {
-            queue!(tui.out, style::Print(&self.value))?;
+            let padding = self.width as usize - self.value.len();
+            queue!(tui.out, style::Print(format!("{}{}", &self.value, " ".repeat(padding))))?;
         } else {
             match self.cut {
                 OverflowCut::Left => {
