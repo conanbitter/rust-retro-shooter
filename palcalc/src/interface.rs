@@ -239,12 +239,10 @@ fn duration_format(duration: Duration) -> String {
     let seconds = duration.as_secs() % 60;
     if hours > 0 {
         format!("{:>2}h {:0>2}m {:0>2}s", hours, minutes, seconds)
+    } else if minutes > 0 {
+        format!("{:0>2}m {:0>2}s    ", minutes, seconds) //"    {:0>2}m {:0>2}s"
     } else {
-        if minutes > 0 {
-            format!("{:0>2}m {:0>2}s    ", minutes, seconds) //"    {:0>2}m {:0>2}s"
-        } else {
-            format!("{:0>2}s        ", seconds) //"        {:0>2}s"
-        }
+        format!("{:0>2}s        ", seconds) //"        {:0>2}s"
     }
 }
 

@@ -46,7 +46,7 @@ fn main() {
     let mut progress = 0;
 
     for filename in adjustable_images.iter() {
-        adjustable_colors.add(&filename).unwrap();
+        adjustable_colors.add(filename).unwrap();
         progress += 1;
         if status_loading.timer.needs_update() {
             status_loading
@@ -56,7 +56,7 @@ fn main() {
         //thread::sleep(Duration::from_millis(300));
     }
     for filename in fixed_images.iter() {
-        fixed_colors.add(&filename).unwrap();
+        fixed_colors.add(filename).unwrap();
         progress += 1;
         if status_loading.timer.needs_update() {
             status_loading

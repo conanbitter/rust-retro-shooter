@@ -39,7 +39,7 @@ impl ColorPoint {
             self.distance = dist;
             return dist;
         }
-        return self.distance;
+        self.distance
     }
 }
 
@@ -62,12 +62,10 @@ impl ColorCalc {
         let mut total_colors = {
             if color_count > 256 {
                 256u64
+            } else if color_count < 1 {
+                1u64
             } else {
-                if color_count < 1 {
-                    1u64
-                } else {
-                    color_count as u64
-                }
+                color_count as u64
             }
         };
 
@@ -93,7 +91,7 @@ impl ColorCalc {
             total_colors = unique_colors;
         }
 
-        return ColorCalc {
+        ColorCalc {
             colors: color_count,
             points,
             centroids: vec![FloatColor::BLACK; total_colors as usize],
@@ -102,7 +100,7 @@ impl ColorCalc {
             points_changed: 0,
             unique_colors,
             fixed_colors: 0,
-        };
+        }
     }
 
     fn init_centroids(&mut self) {
@@ -230,6 +228,6 @@ impl ColorCalc {
                 }
             }
         }
-        return Ok(());
+        Ok(())
     }
 }
